@@ -10,6 +10,10 @@
     <div v-else :style="background"></div>
     <div class="form-wrapper">
       <div class="container">
+        <!-- 标题上方的品牌 Logo，和侧栏左上角的一致 -->
+        <div class="brand-logo">
+          <Icon icon="mdi:email-outline" width="24" height="24"/>
+        </div>
         <span class="form-title">{{ settingStore.settings.title }}</span>
         <span class="form-desc" v-if="show === 'login'">{{ $t('loginTitle') }}</span>
         <span class="form-desc" v-else>{{ $t('regTitle') }}</span>
@@ -632,6 +636,8 @@ function submitRegister() {
 
 <style lang="scss" scoped>
 
+/* 登录表单原来是贴在右边、占满整个高度的半透明面板；改成悬浮在背景图上的毛玻璃卡片，
+   离右边留一段距离（随屏宽变化），背景图能完整露出来 */
 .form-wrapper {
   position: fixed;
   right: 0;
@@ -640,81 +646,113 @@ function submitRegister() {
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 24px clamp(24px, 7vw, 120px);
   @media (max-width: 767px) {
     width: 100%;
+    padding: 16px;
   }
 }
 
 .container {
+  /* 背景透明度仍取自系统设置里的"登录框透明度"，只是多了一层背景模糊，半透明时也看得清字 */
   background: v-bind(loginOpacity);
-  padding-left: 40px;
-  padding-right: 40px;
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  padding: 40px 36px 32px;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  width: 450px;
-  height: 100%;
-  border-left: 1px solid var(--login-border);
-  box-shadow: var(--el-box-shadow-light);
+  width: 420px;
+  border-radius: 20px;
+  border: 1px solid var(--login-border);
+  box-shadow: 0 24px 64px -16px rgba(15, 23, 42, 0.35);
   @media (max-width: 1024px) {
-    padding: 20px 18px;
+    padding: 32px 24px 26px;
     width: 384px;
-    margin-left: 18px;
   }
   @media (max-width: 767px) {
-    border: 1px solid var(--login-border);
-    padding: 20px 18px;
-    border-radius: 6px;
-    height: fit-content;
+    padding: 28px 20px 22px;
+    border-radius: 16px;
     width: 100%;
-    margin-right: 18px;
-    margin-left: 18px;
+  }
+
+  /* 标题上方的 Logo 方块 */
+  .brand-logo {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    background: var(--brand-gradient);
+    box-shadow: 0 8px 18px -8px rgba(51, 112, 255, 0.7);
+    margin-bottom: 18px;
   }
 
   .btn {
-    height: 36px;
+    height: 42px;
     width: 100%;
-    border-radius: 6px;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  /* 主按钮（登录/注册）用品牌渐变，第三方登录按钮保持白底 */
+  .el-button--primary.btn {
+    border: none;
+    background: var(--brand-gradient);
+    box-shadow: 0 8px 20px -10px rgba(51, 112, 255, 0.8);
+
+    &:hover,
+    &:focus {
+      filter: brightness(1.06);
+    }
   }
 
   .form-desc {
-    margin-top: 5px;
-    margin-bottom: 18px;
+    margin-top: 6px;
+    margin-bottom: 26px;
+    font-size: 14px;
     color: var(--form-desc-color);
   }
 
   .form-title {
-    font-weight: bold;
-    font-size: 22px !important;
+    font-weight: 700;
+    font-size: 24px !important;
+    line-height: 1.3;
+    letter-spacing: 0.3px;
   }
 
   .switch {
     margin-top: 20px;
     text-align: center;
+    color: var(--form-desc-color);
 
     span {
       color: var(--login-switch-color);
+      font-weight: 600;
       cursor: pointer;
     }
   }
 
   :deep(.el-input__wrapper) {
-    border-radius: 6px;
+    border-radius: 10px;
     background: var(--el-bg-color);
   }
 
   .email-input :deep(.el-input__wrapper) {
-    border-radius: 6px 0 0 6px;
+    border-radius: 10px 0 0 10px;
     background: var(--el-bg-color);
   }
 
   .el-input {
-    height: 38px;
+    height: 42px;
     width: 100%;
-    margin-bottom: 18px;
+    margin-bottom: 14px;
 
     :deep(.el-input__inner) {
-      height: 36px;
+      height: 40px;
     }
   }
 }
@@ -765,7 +803,7 @@ function submitRegister() {
   padding-left: 8px !important;
   padding-right: 4px !important;
   background: var(--el-bg-color);
-  border-radius: 0 8px 8px 0;
+  border-radius: 0 10px 10px 0;
 }
 
 :deep(.el-button+.el-button) {
@@ -797,7 +835,8 @@ function submitRegister() {
 
 #login-box {
   background: linear-gradient(to bottom, #2980b9, #6dd5fa, #fff);
-  font: 100% Arial, sans-serif;
+  /* 原来是 font: 100% Arial，会把登录页的中文也强行交给 Arial 回落，和系统其他页面字体不一致；只保留字号 */
+  font-size: 100%;
   height: 100%;
   margin: 0;
   padding: 0;

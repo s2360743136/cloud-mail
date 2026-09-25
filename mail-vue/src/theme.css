@@ -1,0 +1,76 @@
+/*
+ * 界面优化：Element Plus 组件的全局微调。
+ * 只放跨页面通用的样式，各页面自己的布局仍写在各自组件里。
+ * 选择器前面统一加 html：Element 的组件样式随页面懒加载，会插在本文件之后，
+ * 同优先级时会把这里的值盖掉，多一级 html 可以不受加载顺序影响。
+ */
+
+/* 弹窗、确认框、通知：更大的圆角，标题加粗 */
+html .el-dialog {
+    --el-dialog-border-radius: 14px;
+    --el-dialog-padding-primary: 20px;
+}
+
+html .el-dialog__title,
+html .el-message-box__title {
+    font-weight: 600;
+}
+
+html .el-message-box {
+    --el-messagebox-border-radius: 14px;
+}
+
+html .el-notification {
+    --el-notification-radius: 12px;
+}
+
+html .el-message {
+    border-radius: 10px;
+}
+
+/* 下拉菜单和右键菜单：容器留 4px 内边距，菜单项做成圆角块，悬停时整块高亮 */
+html .el-dropdown-menu {
+    padding: 4px;
+}
+
+html .el-dropdown-menu__item {
+    border-radius: 6px;
+}
+
+/* 卡片、标签、表格：圆角放大，表头改成浅底 + 次要文字色，和列表页的风格统一 */
+html .el-card {
+    --el-card-border-radius: 12px;
+    --el-card-border-color: var(--el-border-color-lighter);
+}
+
+html .el-tag {
+    --el-tag-border-radius: 6px;
+}
+
+html .el-table {
+    --el-table-header-bg-color: var(--el-fill-color-lighter);
+    --el-table-header-text-color: var(--el-text-color-secondary);
+    --el-table-row-hover-bg-color: var(--email-hover-background);
+    --el-table-border-color: var(--el-border-color-lighter);
+}
+
+/* 分页器当前页用主色实心块 */
+html .el-pagination {
+    --el-pagination-border-radius: 6px;
+}
+
+/* 顶部加载进度条跟随主色（原来是 nprogress 默认的 #29d） */
+#nprogress .bar {
+    background: var(--el-color-primary) !important;
+}
+
+#nprogress .peg {
+    box-shadow: 0 0 10px var(--el-color-primary), 0 0 5px var(--el-color-primary) !important;
+}
+
+/* 时间、数量这类数字用等宽数字，列表里上下对得齐 */
+.email-time,
+.phone-time,
+.email-count {
+    font-variant-numeric: tabular-nums;
+}

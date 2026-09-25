@@ -1,27 +1,33 @@
 <template>
   <div class="account-box">
     <div class="head-opt">
-      <Icon v-perm="'account:add'" class="icon add" icon="ion:add-outline" width="23" height="23" @click="add"/>
-      <Icon class="icon refresh" icon="ion:reload" width="18" height="18" @click="refresh"/>
+      <Icon v-perm="'account:add'" class="icon add" icon="fluent:add-24-regular" width="20" height="20" @click="add"/>
+      <Icon class="icon refresh" icon="fluent:arrow-clockwise-24-regular" width="18" height="18" @click="refresh"/>
     </div>
     <el-scrollbar class="scrollbar" ref="scrollbarRef">
       <div v-infinite-scroll="getAccountList" :infinite-scroll-distance="600" :infinite-scroll-immediate="false">
         <el-card class="item" :class="itemBg(item.accountId)" v-for="(item, index) in accounts" :key="item.accountId"
-                 @click="changeAccount(item)">
-          <div class="account">
-            {{ item.email }}
+                 shadow="never" @click="changeAccount(item)">
+          <!-- 第一行：彩色首字母头像 + 邮箱地址 -->
+          <div class="account-row">
+            <div class="account-avatar" :style="{background: avatarColor(item.email)}">{{ avatarLetter(item.email) }}</div>
+            <div class="account">
+              {{ item.email }}
+            </div>
           </div>
+          <!-- 第二行：操作图标。原来是黄信封、彩色文件夹、彩色剪贴板三种风格混在一起，
+               统一换成单色线条图标；"全部收件"开启时图标换成多封信并用主色标出来 -->
           <div class="opt">
             <div class="send-email" @click.stop>
-              <Icon @click="setAllReceive(item)" v-if="!item.allReceive" icon="eva:email-fill" width="22" height="22" color="#fccb1a"/>
-              <Icon @click="setAllReceive(item)" v-else icon="flat-color-icons:folder" width="22" height="22" color="#23c4f1" />
+              <Icon @click="setAllReceive(item)" v-if="!item.allReceive" class="opt-icon" icon="fluent:mail-24-regular" width="18" height="18"/>
+              <Icon @click="setAllReceive(item)" v-else class="opt-icon all-receive" icon="fluent:mail-multiple-24-regular" width="18" height="18"/>
             </div>
             <div class="settings" @click.stop>
-              <Icon icon="fluent-color:clipboard-24" width="22" height="22" @click.stop="copyAccount(item.email)"/>
-              <Icon icon="fluent:settings-24-filled" width="21" height="21" color="#909399"
+              <Icon class="opt-icon" icon="fluent:copy-24-regular" width="18" height="18" @click.stop="copyAccount(item.email)"/>
+              <Icon class="opt-icon" icon="fluent:settings-24-regular" width="18" height="18"
                     v-if="showNullSetting(item)"/>
               <el-dropdown v-else>
-                <Icon icon="fluent:settings-24-filled" width="21" height="21" color="#909399"/>
+                <Icon class="opt-icon" icon="fluent:settings-24-regular" width="18" height="18"/>
                 <template #dropdown>
                   <el-dropdown-menu>
                     <el-dropdown-item v-if="hasPerm('email:send')" @click="openSetName(item)">{{ $t('rename') }}</el-dropdown-item>
@@ -37,14 +43,18 @@
         </el-card>
 
         <!-- Initial Loading Skeleton -->
+        <!-- 骨架屏和真实条目保持同样的结构（圆形头像 + 邮箱 + 图标行），加载完成时不会跳动 -->
         <template v-if="loading">
           <el-skeleton v-for="i in skeletonRows" :key="i" animated>
             <template #template>
-              <el-card class="item">
-                <el-skeleton-item variant="p" style="width: 70%; height: 20px; margin-bottom: 25px"/>
-                <div style="display: flex; justify-content: space-between">
-                  <el-skeleton-item variant="text" style="width: 20px"/>
-                  <el-skeleton-item variant="text" style="width: 20px"/>
+              <el-card class="item" shadow="never">
+                <div class="account-row">
+                  <el-skeleton-item variant="circle" class="account-avatar"/>
+                  <el-skeleton-item variant="p" style="width: 70%; height: 16px"/>
+                </div>
+                <div class="opt">
+                  <el-skeleton-item variant="text" style="width: 18px"/>
+                  <el-skeleton-item variant="text" style="width: 18px"/>
                 </div>
               </el-card>
             </template>
@@ -55,11 +65,14 @@
         <template v-if="accounts.length > 0 && !noLoading">
           <el-skeleton animated>
             <template #template>
-              <el-card class="item">
-                <el-skeleton-item variant="p" style="width: 70%; height: 20px; margin-bottom: 20px"/>
-                <div style="display: flex; justify-content: space-between">
-                  <el-skeleton-item variant="text" style="width: 20px"/>
-                  <el-skeleton-item variant="text" style="width: 20px"/>
+              <el-card class="item" shadow="never">
+                <div class="account-row">
+                  <el-skeleton-item variant="circle" class="account-avatar"/>
+                  <el-skeleton-item variant="p" style="width: 70%; height: 16px"/>
+                </div>
+                <div class="opt">
+                  <el-skeleton-item variant="text" style="width: 18px"/>
+                  <el-skeleton-item variant="text" style="width: 18px"/>
                 </div>
               </el-card>
             </template>
@@ -145,6 +158,7 @@ import {useUserStore} from "@/store/user.js";
 import {hasPerm} from "@/perm/perm.js"
 import {useI18n} from "vue-i18n";
 import {AccountAllReceiveEnum} from "@/enums/account-enum.js";
+import {avatarColor, avatarLetter} from "@/utils/avatar.js";
 
 const {t} = useI18n();
 const userStore = useUserStore();
@@ -522,7 +536,7 @@ path[fill="#ffdda1"] {
 <style scoped lang="scss">
 .account-box {
 
-  border-right: 1px solid var(--el-border-color) !important;
+  border-right: 1px solid var(--el-border-color-lighter) !important;
   background-color: var(--el-bg-color);
   height: 100%;
   overflow: hidden;
@@ -530,25 +544,26 @@ path[fill="#ffdda1"] {
   .head-opt {
     display: flex;
     align-items: center;
+    gap: 2px;
     height: 38px;
     box-shadow: var(--header-actions-border);
-    padding-left: 10px;
+    padding-left: 8px;
     padding-right: 10px;
 
+    /* 顶部"新增/刷新"做成带悬停底色的小图标按钮；
+       全局是 border-box，这里要改回 content-box，否则 padding 会把图标本身挤小 */
     .icon {
       cursor: pointer;
-    }
+      box-sizing: content-box;
+      padding: 5px;
+      border-radius: 8px;
+      color: var(--el-text-color-secondary);
+      transition: background 0.15s ease, color 0.15s ease;
 
-    .refresh {
-      margin-left: 10px;
-    }
-
-    .add {
-      margin-left: 2px;
-    }
-
-    .head-opt:not(.add) .refresh {
-      margin-left: 5px;
+      &:hover {
+        background: var(--icon-btn-hover-background);
+        color: var(--el-text-color-primary);
+      }
     }
   }
 
@@ -581,39 +596,85 @@ path[fill="#ffdda1"] {
     margin-top: 15px;
   }
 
+  /* 邮箱条目：原来是带边框和阴影的卡片，改成无边框的圆角行，悬停浅灰、选中主色浅底 */
   .item {
-    background-color: var(--el-bg-color);
-    border-radius: 8px;
-    padding: 10px;
-    margin-bottom: 11px;
-    margin-left: 10px;
-    margin-right: 10px;
+    background-color: transparent;
+    border: none;
+    border-radius: 12px;
+    padding: 10px 12px;
+    margin: 0 8px 4px;
     cursor: pointer;
+    transition: background-color 0.15s ease;
+
+    &:hover {
+      background-color: var(--email-hover-background);
+    }
+
+    .account-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    /* 首字母头像，底色由 avatarColor 按邮箱算出，同一个邮箱颜色固定 */
+    .account-avatar {
+      flex-shrink: 0;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      font-size: 14px;
+      font-weight: 600;
+    }
 
     .account {
-      font-weight: 400;
-      font-size: 15px;
-      margin-bottom: 20px;
+      min-width: 0;
+      font-weight: 500;
+      font-size: 14px;
+      color: var(--el-text-color-primary);
       overflow: hidden;
       white-space: nowrap;
       text-overflow: ellipsis;
     }
 
+    /* 图标行左边留出"头像宽度 + 间距"（32 + 10），和邮箱文字左对齐 */
     .opt {
       display: flex;
       justify-content: space-between;
+      align-items: center;
+      margin-top: 6px;
+      padding-left: 42px;
       font-size: 12px;
-      color: #888;
+      color: var(--secondary-text-color);
 
       .settings {
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 12px;
       }
 
       .send-email {
         display: flex;
         align-items: center;
+      }
+
+      .opt-icon {
+        cursor: pointer;
+        transition: color 0.15s ease;
+
+        &:hover {
+          color: var(--el-text-color-primary);
+        }
+      }
+
+      /* "全部收件"开启时用主色，一眼能看出哪个邮箱开着 */
+      .all-receive,
+      .all-receive:hover {
+        color: var(--el-color-primary);
       }
     }
 
@@ -623,11 +684,16 @@ path[fill="#ffdda1"] {
   }
 
   .item:first-child {
-    margin-top: 10px;
+    margin-top: 8px;
   }
 
-  .item-choose {
+  .item-choose,
+  .item-choose:hover {
     background: var(--choose-account-background);
+
+    .account {
+      font-weight: 600;
+    }
   }
 }
 

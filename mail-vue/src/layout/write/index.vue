@@ -630,11 +630,12 @@ function close() {
   .write-box {
     background: var(--el-bg-color);
     width: min(1367px, calc(100% - 80px));
-    box-shadow: var(--el-box-shadow-light);
+    /* 写信窗口是浮在页面上的大窗，用和弹窗一样的深阴影、14px 圆角 */
+    box-shadow: var(--el-box-shadow);
     border: 1px solid var(--el-border-color-light);
     transition: var(--el-transition-duration);
     padding: 15px;
-    border-radius: 8px;
+    border-radius: 14px;
     display: grid;
     grid-template-rows: auto 1fr;
     overflow: hidden;

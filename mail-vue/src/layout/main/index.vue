@@ -159,6 +159,25 @@ const handleResize = () => {
   height: calc(100% - 60px);
 }
 
+/* 内容区做成压在应用底色上的白色圆角面板（顶栏下方留 12px 外边距）。
+   用 overflow: auto 而不是 hidden：个人设置页没有自己的滚动条，内容超高时要靠这一层滚动 */
+.main-box-show,
+.main-box-hide {
+  height: calc(100% - 60px - 12px);
+  margin: 0 12px 12px 12px;
+  background: var(--el-bg-color);
+  border-radius: var(--panel-radius);
+  box-shadow: var(--panel-shadow);
+  overflow: auto;
+  /* 手机上屏幕窄，面板贴边、去掉圆角，把宽度都留给内容 */
+  @media (max-width: 767px) {
+    height: calc(100% - 60px);
+    margin: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+}
+
 
 .main-view {
   background: var(--el-bg-color);

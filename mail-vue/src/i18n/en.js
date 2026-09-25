@@ -359,6 +359,8 @@ const en = {
     clientId: 'Client ID',
     clientSecret: 'Client Secret',
     notOwner: 'Base email does not belong to you',
+    // 侧栏顶部的写邮件按钮（界面优化新增）
+    compose: 'Compose',
 }
 
 export default en

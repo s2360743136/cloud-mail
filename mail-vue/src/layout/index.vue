@@ -72,6 +72,8 @@ onBeforeUnmount(() => {
     z-index: 101;
     height: 100%;
     background: var(--el-bg-color);
+    /* 桌面端侧栏和底色融为一体不需要阴影，手机端是浮在内容上的抽屉，要一道阴影和内容分开 */
+    box-shadow: 0 0 32px rgba(15, 23, 42, 0.18);
   }
 }
 
@@ -91,7 +93,8 @@ onBeforeUnmount(() => {
 
 .main-container {
   min-height: 100%;
-  background: var(--el-bg-color);
+  /* 右侧整体铺应用底色，内容区在 main/index.vue 里做成压在底色上的白色圆角面板 */
+  background: var(--app-bg);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
@@ -101,9 +104,15 @@ onBeforeUnmount(() => {
 }
 
 .el-header {
-  background: var(--el-bg-color);
-  border-bottom: solid 1px var(--el-border-color);
+  /* 顶栏和底色一体，不再画分割线，靠下面的白色面板区分层次 */
+  background: var(--app-bg);
+  border-bottom: none;
   padding: 0 0 0 0;
+  /* 手机上内容面板是贴边的，顶栏换回白底加细线，避免灰白两块拼在一起显得脏 */
+  @media (max-width: 767px) {
+    background: var(--el-bg-color);
+    border-bottom: solid 1px var(--el-border-color-lighter);
+  }
 }
 
 .overlay-show {

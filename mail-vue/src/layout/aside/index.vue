@@ -1,11 +1,20 @@
 <template>
   <el-scrollbar class="scroll">
     <div>
+      <!-- 品牌区：渐变小方块 Logo + 站点标题，左对齐，高度和右侧顶栏一致 -->
       <div class="title" >
-        <Icon icon="mdi:email-outline" width="24" height="24" />
-        <div>{{settingStore.settings.title}}</div>
+        <div class="logo">
+          <Icon icon="mdi:email-outline" width="20" height="20" />
+        </div>
+        <div class="title-text">{{settingStore.settings.title}}</div>
       </div>
-      <el-menu :collapse="false" text-color="#fff" active-text-color="#fff" style="margin-top: 10px">
+      <!-- 写邮件按钮放在侧栏最显眼的位置；桌面端显示侧栏时，顶栏里那个圆形按钮会隐藏 -->
+      <div class="compose" v-perm="'email:send'" @click="openSend">
+        <Icon icon="material-symbols:edit-outline-sharp" width="20" height="20"/>
+        <span>{{ $t('compose') }}</span>
+      </div>
+      <!-- 文字颜色改由样式里的 CSS 变量控制（原来写死 #fff，只适合深色侧栏） -->
+      <el-menu :collapse="false">
         <el-menu-item @click="router.push({name: 'email'})" index="email"
                       :class="route.meta.name === 'email' ? 'choose-item' : ''">
           <Icon icon="hugeicons:mailbox-01" width="20" height="20" />
@@ -74,75 +83,121 @@ import router from "@/router/index.js";
 import { useRoute } from "vue-router";
 import {Icon} from "@iconify/vue";
 import {useSettingStore} from "@/store/setting.js";
+import {useUiStore} from "@/store/ui.js";
 
 const settingStore = useSettingStore();
+const uiStore = useUiStore();
 const route = useRoute();
+
+// 侧栏里的写邮件按钮：和顶栏按钮一样打开写信窗口。
+// 手机/平板上侧栏是盖在内容上的抽屉，先把抽屉收起来，不然写信窗口打开后抽屉和遮罩还盖在页面上
+function openSend() {
+  if (window.innerWidth < 1025) {
+    uiStore.asideShow = false
+  }
+  uiStore.writerRef.open()
+}
 
 </script>
 
 <style lang="scss" scoped>
 
+/* 品牌区：高度 60px 和右侧顶栏对齐，Logo 是渐变圆角方块，标题用正文色加粗 */
 .title {
-  margin: 15px 10px;
-  height: 45px;
-  border-radius: 6px;
+  height: 60px;
   display: flex;
-  position: relative;
-  font-size: 16px;
-  font-weight: bold;
   align-items: center;
-  justify-content: center;
-  gap: 5px;
-  color: #ffffff;
-  background: linear-gradient(135deg, #1890ff, #3a80dd);
-  transition: all 0.3s ease;
-  max-width: 240px;
-  padding: 0 10px;
-  > div {
+  gap: 10px;
+  padding: 0 22px;
+  max-width: 260px;
+  color: var(--el-text-color-primary);
+
+  .logo {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    background: var(--brand-gradient);
+    box-shadow: 0 4px 10px -4px rgba(51, 112, 255, 0.6);
+  }
+
+  .title-text {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
-    max-width: calc(240px - 20px - 30px);
   }
-
-  :deep(.el-icon) {
-    flex-shrink: 0;
-    font-size: 20px;
-  }
-
-  .user-right-icon {
-    align-self: center;
-    position: absolute;
-    font-size: 12px;
-    right: 8px;
-    color: #ffffff;
-  }
-
 }
 
+/* 写邮件按钮：侧栏里唯一的实心按钮，用品牌渐变 + 同色投影做视觉重心 */
+.compose {
+  margin: 4px 14px 10px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  background: var(--brand-gradient);
+  box-shadow: 0 6px 16px -6px rgba(51, 112, 255, 0.55);
+  cursor: pointer;
+  user-select: none;
+  transition: filter 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
 
+  &:hover {
+    filter: brightness(1.06);
+    box-shadow: 0 8px 20px -6px rgba(51, 112, 255, 0.65);
+  }
+
+  &:active {
+    transform: translateY(1px);
+  }
+}
+
+/* "管理"分组标题：小号灰字，和菜单项拉开层级 */
 .manage-title {
-  margin-top: 10px;
-  padding-left: 20px;
-  color: #fff;
+  margin: 14px 0 4px;
+  padding-left: 24px;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  color: var(--aside-muted-color);
+  user-select: none;
 }
 
+/* 菜单项：圆角胶囊，常态用正文灰，悬停浅灰底，选中是主色浅底 + 主色字 */
 .el-menu-item {
-  margin: 3px 10px !important;
-  border-radius: 6px;
-  height: 36px;
+  margin: 2px 12px !important;
+  border-radius: 8px;
+  height: 38px;
   padding: 10px !important;
+  color: var(--aside-text-color);
 }
 
-.choose-item {
-  font-weight: 400;
+/* Element 会给最后点过的菜单项加 is-active 并改成主色，但它按 index 判断，
+   而这里有几个菜单共用 index="setting"，会出现两项同时高亮；统一以路由算出来的 choose-item 为准 */
+.el-menu-item.is-active {
+  color: var(--aside-text-color);
+}
+
+.choose-item,
+.choose-item.is-active {
+  font-weight: 600;
+  color: var(--aside-active-color);
   background: var(--aside-menu-active-background) !important;
-  backdrop-filter: blur(4px);
 }
 
 @media (hover: hover) {
-  .el-menu-item:hover {
-    background: rgba(255, 255, 255, 0.08) !important;
+  .el-menu-item:not(.choose-item):hover {
+    background: var(--aside-hover-background) !important;
   }
 }
 

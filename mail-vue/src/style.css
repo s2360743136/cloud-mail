@@ -27,10 +27,14 @@ html, body {
 }
 
 body {
-    font-family: Inter, "Helvetica Neue", Helvetica, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif;
+    /* Windows 上没装 Inter/Helvetica，原来会直接落到微软雅黑，英文和数字发虚；
+       在中文字体前面插入 system-ui / Segoe UI，让西文先用系统 UI 字体，中文再回落到苹方/雅黑 */
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Helvetica, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif;
     line-height: 1.5;
     color: var(--el-text-color-primary);
     font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 html, body {
@@ -106,71 +110,141 @@ button, input, select, textarea {
 }
 
 :root {
-    --el-color-primary: #1890ff;
-    --el-color-primary-dark-2: #1064c0;
-    --el-color-primary-light-3: #4dabff;
-    --el-color-primary-light-5: #69c0ff;
-    --el-color-primary-light-7: #91d5ff;
-    --el-color-primary-light-9: #e6f7ff;
-
-    --extra-light-fill: #FAFCFF;
+    --extra-light-fill: #FAFBFD;
     --settings-page-background: #fafbfc;
-    --light-ill: #F5F7FA;
-    --light-border: #E4E7ED;
+    --light-ill: #F5F6F8;
+    --light-border: #E6E8ED;
     --header-actions-border: inset 0 -1px 0 0 var(--el-border-color-lighter);
-    --aside-backgound: #191A23;
-    --aside-menu-active-background: #27282D;
+    /* 侧栏改成和页面底色一致的浅色，不再是深色后台模板风 */
+    --aside-backgound: var(--app-bg);
+    --aside-menu-active-background: #E3EBFF;
     --loadding-background: rgba(255, 255, 255, 0.8);
     --dark-border: #CDD0D6;
-    --base-fill: #F0F2F5;
-    --regular-text-color: #585d69;
-    --light-border-color: #e7e9ec;
-    --aside-right-border: 3px 0 5px rgba(0, 21, 41, .35);
-    --choose-account-background: var(--el-color-primary-light-8);
+    --base-fill: #EDEFF3;
+    --regular-text-color: #4E5561;
+    --light-border-color: #EAECF0;
+    /* 侧栏在桌面端靠底色区分，不再需要投影；手机端抽屉的阴影在 layout/index.vue 里单独加 */
+    --aside-right-border: none;
+    --choose-account-background: var(--el-color-primary-light-9);
     --el-text-color-regular: var(--el-text-color-primary);
-    --email-scroll-content-color: rgba(25, 41, 59, 0.4);
-    --email-hover-background: #F2F6FC;
+    --email-scroll-content-color: #8A9099;
+    --email-hover-background: #F4F6FA;
     --email-right-click-background: #FDF6EC;
-    --login-border: none;
-    --form-desc-color: #71717a;
-    --login-switch-color: #006be6;
+    /* 登录卡片的描边：浅色下是一圈半透明白边，毛玻璃卡片压在深色背景图上时轮廓更清楚 */
+    --login-border: rgba(255, 255, 255, 0.6);
+    --form-desc-color: #646A73;
+    --login-switch-color: var(--el-color-primary);
     --scrollbar-track-color: #A8ABB2;
     --base-border-color: #DCDFE6;
-    --secondary-text-color: #909399;
+    --secondary-text-color: #8A9099;
     --message-block-color: rgba(0, 0, 0, 0);
     --loading-hide-transition: all 200ms;
     --vt-x: 50%;
     --vt-y: 50%;
     --vt-duration: 520ms;
     --vt-easing: ease-out;
+
+    /* ---- 以下是这次界面优化新增的变量 ---- */
+    /* 整个应用的底色：侧栏、顶栏都铺这个色，内容区是压在上面的白色圆角面板 */
+    --app-bg: #F4F6FA;
+    /* 内容面板的圆角和阴影 */
+    --panel-radius: 16px;
+    --panel-shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.06);
+    /* 侧栏菜单文字：常态 / 选中 / 悬停底色 / 分组标题 */
+    --aside-text-color: #3B4048;
+    --aside-active-color: var(--el-color-primary);
+    --aside-hover-background: rgba(31, 35, 41, 0.05);
+    --aside-muted-color: #8A9099;
+    /* 顶栏和列表里的图标按钮悬停底色 */
+    --icon-btn-hover-background: rgba(31, 35, 41, 0.06);
+    /* 品牌色渐变：侧栏 Logo、写邮件按钮、登录页按钮共用 */
+    --brand-gradient: linear-gradient(135deg, #4F8BFF 0%, #3370FF 55%, #2B5FE0 100%);
 }
 
 .dark {
     --extra-light-fill: #191919;
     --settings-page-background: var(--extra-light-fill);
-    --light-ill: #262727;
+    --light-ill: #232427;
     --light-border: #414243;
-    --aside-backgound: #141414;
-    --aside-menu-active-background: rgba(255, 255, 255, 0.08);
+    --aside-backgound: var(--app-bg);
+    --aside-menu-active-background: rgba(75, 131, 255, 0.16);
     --header-actions-border: inset 0 -1px 0 0 var(--el-border-color-lighter);
     --loadding-background: rgba(0, 0, 0, 0.3);
     --dark-border: #636466;
-    --base-fill: #303030;
+    --base-fill: #2A2B2E;
     --regular-text-color: #bfbdbc;
-    --light-border-color: #414243;
-    --aside-right-border: 3px 0 5px #0A0A0A;
-    --choose-account-background: #39393A;
-    --email-scroll-content-color: rgba(255, 255, 255, 0.3);
-    --email-hover-background: #1D1E1F;
+    --light-border-color: #2E2F32;
+    --aside-right-border: none;
+    --choose-account-background: rgba(75, 131, 255, 0.14);
+    --email-scroll-content-color: #7D8189;
+    --email-hover-background: #1B1C1F;
     --email-right-click-background: var(--email-hover-background);
-    --login-border: none;
+    --login-border: rgba(255, 255, 255, 0.08);
     --form-desc-color: #8D9095;
-    --login-switch-color: rgb(102, 177, 255);
+    --login-switch-color: #7FA6FF;
     --scrollbar-track-color: #8D9095;
     --base-border-color: #4C4D4F;
     --secondary-text-color: #A3A6AD;
     --message-block-color: rgba(30, 30, 30, 0.2);
     --el-border-color: #414243 !important;
+
+    --app-bg: #0C0C0E;
+    --panel-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
+    --aside-text-color: #CFD3DC;
+    --aside-active-color: #A9C2FF;
+    --aside-hover-background: rgba(255, 255, 255, 0.06);
+    --aside-muted-color: #7D8189;
+    --icon-btn-hover-background: rgba(255, 255, 255, 0.08);
+}
+
+/*
+ * Element Plus 主题变量。
+ * 为什么用 html:root 而不是 :root：Element 按需引入的组件样式里自带 :root 默认值（#409eff 那套），
+ * 懒加载页面的样式会在后面插入，同为 :root 时谁后加载谁生效，这里提高一级优先级，不受加载顺序影响。
+ */
+html:root {
+    /* 主色：比原来的 #1890ff 更沉稳一点的蓝，light-x 是按 Element 的规则和白色混出来的 */
+    --el-color-primary: #3370FF;
+    --el-color-primary-dark-2: #295ACC;
+    --el-color-primary-light-3: #709BFF;
+    --el-color-primary-light-5: #99B8FF;
+    --el-color-primary-light-7: #C2D4FF;
+    --el-color-primary-light-8: #D6E2FF;
+    --el-color-primary-light-9: #EBF1FF;
+
+    /* 文字、边框、填充换成偏冷的中性灰，层次比 Element 默认的更清楚 */
+    --el-text-color-primary: #1F2329;
+    --el-text-color-secondary: #646A73;
+    --el-text-color-placeholder: #A2A7B0;
+    --el-border-color: #E1E4EA;
+    --el-border-color-light: #E6E8ED;
+    --el-border-color-lighter: #EDEFF3;
+    --el-border-color-extra-light: #F2F3F6;
+    --el-fill-color-light: #F5F6F8;
+    --el-fill-color-lighter: #F8F9FB;
+
+    /* 圆角整体放大：4px → 8px，按钮、输入框、卡片、弹窗都会跟着变 */
+    --el-border-radius-base: 8px;
+    --el-border-radius-small: 6px;
+    --el-box-shadow-light: 0 1px 2px rgba(16, 24, 40, 0.04), 0 6px 20px -4px rgba(16, 24, 40, 0.10);
+    --el-box-shadow: 0 12px 32px -8px rgba(16, 24, 40, 0.16), 0 2px 6px rgba(16, 24, 40, 0.06);
+}
+
+/*
+ * 暗色主题的 Element 变量。Element 自带的暗色变量写在 html.dark 上（优先级 0,1,1），
+ * 原来的 .dark（0,1,0）压不过它，所以暗色下主色一直是 Element 默认蓝；这里用 :root.dark（0,2,0）盖过去。
+ * light-x 在暗色下是主色和背景 #141414 混合（Element 暗色的规则），dark-2 是往白色提亮。
+ */
+:root.dark {
+    --el-color-primary: #4B83FF;
+    --el-color-primary-dark-2: #6F9CFF;
+    --el-color-primary-light-3: #3B62B9;
+    --el-color-primary-light-5: #304C8A;
+    --el-color-primary-light-7: #25355A;
+    --el-color-primary-light-8: #1F2A43;
+    --el-color-primary-light-9: #1A1F2C;
+    --el-box-shadow-light: 0 6px 20px -4px rgba(0, 0, 0, 0.5);
+    --el-box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.6);
 }
 
 .el-input {

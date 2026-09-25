@@ -1,14 +1,15 @@
 <template>
   <div class="box">
+    <!-- 顶部操作图标原来来自 5 个不同图标库，粗细不一；统一成 Fluent 单色线条，已加星仍用彩色星标 -->
     <div class="header-actions">
-      <Icon class="icon" icon="material-symbols-light:arrow-back-ios-new" width="20" height="20" @click="handleBack"/>
-      <Icon v-perm="'email:delete'" class="icon" icon="uiw:delete" width="16" height="16" @click="handleDelete"/>
+      <Icon class="icon" icon="fluent:arrow-left-24-regular" width="18" height="18" @click="handleBack"/>
+      <Icon v-perm="'email:delete'" class="icon" icon="fluent:delete-24-regular" width="18" height="18" @click="handleDelete"/>
       <span class="star" v-if="emailStore.contentData.showStar">
-        <Icon class="icon" @click="changeStar" v-if="email.isStar" icon="fluent-color:star-16" width="20" height="20"/>
-        <Icon class="icon" @click="changeStar" v-else icon="solar:star-line-duotone" width="18" height="18"/>
+        <Icon class="icon" @click="changeStar" v-if="email.isStar" icon="fluent-color:star-16" width="18" height="18"/>
+        <Icon class="icon" @click="changeStar" v-else icon="fluent:star-24-regular" width="18" height="18"/>
       </span>
-      <Icon class="icon" v-if="emailStore.contentData.showReply" v-perm="'email:send'"  @click="openReply" icon="la:reply" width="21" height="21" />
-      <Icon class="icon" v-if="emailStore.contentData.showReply" v-perm="'email:send'"  @click="openForward" icon="iconoir:arrow-up-right" width="20" height="20" />
+      <Icon class="icon" v-if="emailStore.contentData.showReply" v-perm="'email:send'"  @click="openReply" icon="fluent:arrow-reply-24-regular" width="18" height="18" />
+      <Icon class="icon" v-if="emailStore.contentData.showReply" v-perm="'email:send'"  @click="openForward" icon="fluent:arrow-forward-24-regular" width="18" height="18" />
     </div>
     <div></div>
     <el-scrollbar class="scrollbar">
@@ -18,16 +19,22 @@
         </div>
         <div class="content">
           <div class="email-info">
-            <div>
-              <div class="send"><span class="send-source">{{$t('from')}}</span>
-                <div class="send-name">
-                  <span class="send-name-title">{{ email.name }}</span>
-                  <span><{{ email.sendEmail }}></span>
-                </div>
+            <!-- 发件人信息前加一个首字母头像（颜色按发件邮箱固定），和邮箱栏的头像风格一致 -->
+            <div class="sender-card">
+              <div class="sender-avatar" :style="{background: avatarColor(email.sendEmail)}">
+                {{ avatarLetter(email.name || email.sendEmail) }}
               </div>
-              <div class="receive"><span class="source">{{$t('recipient')}}</span><span class="receive-email">{{  formateReceive(email.recipient) }}</span></div>
-              <div class="date">
-                <div>{{ formatDetailDate(email.createTime) }}</div>
+              <div class="sender-meta">
+                <div class="send"><span class="send-source">{{$t('from')}}</span>
+                  <div class="send-name">
+                    <span class="send-name-title">{{ email.name }}</span>
+                    <span><{{ email.sendEmail }}></span>
+                  </div>
+                </div>
+                <div class="receive"><span class="source">{{$t('recipient')}}</span><span class="receive-email">{{  formateReceive(email.recipient) }}</span></div>
+                <div class="date">
+                  <div>{{ formatDetailDate(email.createTime) }}</div>
+                </div>
               </div>
             </div>
             <el-alert v-if="email.status === 3" :closable="false" :title="toMessage(email.message)" class="email-msg" type="error" show-icon />
@@ -54,9 +61,9 @@
                 </div>
                 <div class="att-size">{{ formatBytes(att.size) }}</div>
                 <div class="opt-icon att-icon">
-                  <Icon v-if="isImage(att.filename)" icon="hugeicons:view" width="22" height="22" @click="showImage(att.key)"/>
+                  <Icon v-if="isImage(att.filename)" icon="fluent:eye-24-regular" width="18" height="18" @click="showImage(att.key)"/>
                   <a :href="cvtR2Url(att.key)" download>
-                    <Icon icon="system-uicons:push-down" width="22" height="22"/>
+                    <Icon icon="fluent:arrow-download-24-regular" width="18" height="18"/>
                   </a>
                 </div>
               </div>
@@ -92,6 +99,7 @@ import {allEmailDelete} from "@/request/all-email.js";
 import {useUiStore} from "@/store/ui.js";
 import {useI18n} from "vue-i18n";
 import {EmailUnreadEnum} from "@/enums/email-enum.js";
+import {avatarColor, avatarLetter} from "@/utils/avatar.js";
 
 const uiStore = useUiStore();
 const settingStore = useSettingStore();
@@ -271,21 +279,33 @@ const handleDelete = () => {
   overflow: hidden;
 }
 
+/* 操作栏总高度仍是 38px（下面 .scrollbar 按 100% - 38px 算），图标做成 28px 的悬停按钮 */
 .header-actions {
-  padding: 9px 15px 8px;
+  padding: 5px 12px;
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 6px;
   box-shadow: var(--header-actions-border);
   font-size: 18px;
+  color: var(--el-text-color-secondary);
   .star {
     display: flex;
     align-items: center;
     justify-content: center;
     min-width: 21px;
   }
+  /* 全局是 border-box，改回 content-box，padding 才不会把 18px 的图标挤小 */
   .icon {
     cursor: pointer;
+    box-sizing: content-box;
+    padding: 5px;
+    border-radius: 8px;
+    transition: background 0.15s ease, color 0.15s ease;
+
+    &:hover {
+      background: var(--icon-btn-hover-background);
+      color: var(--el-text-color-primary);
+    }
   }
 }
 
@@ -297,18 +317,24 @@ const handleDelete = () => {
 
 .container {
   font-size: 14px;
-  padding-left: 20px;
-  padding-right: 20px;
-  padding-top: 10px;
+  padding-left: 24px;
+  padding-right: 24px;
+  padding-top: 18px;
   @media (max-width: 1023px) {
     padding-left: 15px;
     padding-right: 15px;
+    padding-top: 12px;
   }
 
   .email-title {
-    font-size: 20px;
-    font-weight: bold;
-    margin-bottom: 10px;
+    font-size: 22px;
+    font-weight: 600;
+    line-height: 1.4;
+    word-break: break-word;
+    margin-bottom: 16px;
+    @media (max-width: 767px) {
+      font-size: 19px;
+    }
   }
 
   .htm-scrollbar {
@@ -323,7 +349,7 @@ const handleDelete = () => {
       margin-bottom: 30px;
       border: 1px solid var(--light-border-color);
       padding: 14px;
-      border-radius: 6px;
+      border-radius: 12px;
       width: fit-content;
       .att-box {
         min-width: min(410px,calc(100vw - 60px));
@@ -348,8 +374,13 @@ const handleDelete = () => {
           align-self: center;
         }
         background: var(--light-ill);
-        padding: 5px 7px;
-        border-radius: 4px;
+        padding: 8px 10px;
+        border-radius: 8px;
+        transition: background 0.15s ease;
+
+        &:hover {
+          background: var(--email-hover-background);
+        }
         align-self: start;
         display: grid;
         grid-template-columns: auto 1fr auto auto;
@@ -396,12 +427,44 @@ const handleDelete = () => {
 
       border-bottom: 1px solid var(--light-border-color);
       margin-bottom: 20px;
-      padding-bottom: 8px;
+      padding-bottom: 12px;
       @media (max-width: 1024px) {
         margin-bottom: 15px;
       }
+
+      /* 头像在左、发件信息在右；头像和第一行文字顶部对齐 */
+      .sender-card {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+      }
+
+      .sender-avatar {
+        flex-shrink: 0;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #ffffff;
+        font-size: 16px;
+        font-weight: 600;
+        @media (max-width: 767px) {
+          width: 36px;
+          height: 36px;
+          font-size: 15px;
+        }
+      }
+
+      .sender-meta {
+        flex: 1;
+        min-width: 0;
+      }
+
       .date {
-        color: var(--regular-text-color);
+        color: var(--secondary-text-color);
+        font-size: 13px;
         margin-bottom: 6px;
       }
 
@@ -413,21 +476,24 @@ const handleDelete = () => {
 
       .send {
         display: flex;
-        margin-bottom: 6px;
+        margin-bottom: 4px;
 
         .send-name {
-          color: var(--regular-text-color);
+          color: var(--secondary-text-color);
           display: flex;
           flex-wrap: wrap;
         }
 
+        /* 发件人名字加粗用正文色，后面的邮箱地址用次要灰，主次分明 */
         .send-name-title {
           padding-right: 5px;
+          font-weight: 600;
+          color: var(--el-text-color-primary);
         }
       }
 
       .receive {
-        margin-bottom: 6px;
+        margin-bottom: 4px;
         display: flex;
         .receive-email {
           max-width: 700px;
@@ -438,15 +504,16 @@ const handleDelete = () => {
         }
       }
 
+      /* "发件人/收件人"标签降为次要灰，不再和内容抢视线 */
       .send-source {
         white-space: nowrap;
-        font-weight: bold;
+        color: var(--secondary-text-color);
         padding-right: 10px;
       }
 
       .source {
         white-space: nowrap;
-        font-weight: bold;
+        color: var(--secondary-text-color);
         padding-right: 10px;
       }
     }

@@ -4,7 +4,8 @@
       <hanburger @click="changeAside"></hanburger>
       <span class="breadcrumb-item">{{ $t(route.meta.title) }}</span>
     </div>
-    <div v-perm="'email:send'" class="writer-box" @click="openSend">
+    <!-- aside-open：桌面端侧栏展开时侧栏里已经有写邮件按钮，这个圆形按钮就藏起来（样式里按屏幕宽度判断） -->
+    <div v-perm="'email:send'" class="writer-box" :class="{'aside-open': uiStore.asideShow}" @click="openSend">
       <div class="writer">
         <Icon icon="material-symbols:edit-outline-sharp" width="22" height="22"/>
       </div>
@@ -228,7 +229,9 @@ function switchDark(nextIsDark, root) {
   root.setAttribute('class', nextIsDark ? 'dark' : '')
   const metaTag = document.getElementById('theme-color-meta');
   const isMobile =  !window.matchMedia("(pointer: fine) and (hover: hover)").matches;
-  metaTag.setAttribute('content', nextIsDark ? (isMobile ? '#141414' : '#000000') : (isMobile ? '#191A23' : '#F1F1F1'));
+  // 浏览器地址栏/状态栏颜色跟着顶栏走：手机上顶栏是白底（暗色 #141414），桌面端是应用底色 --app-bg。
+  // index.html 里首屏也有同样一套取值，两处要一起改
+  metaTag.setAttribute('content', nextIsDark ? (isMobile ? '#141414' : '#0C0C0E') : (isMobile ? '#FFFFFF' : '#F4F6FA'));
   uiStore.dark = nextIsDark
 }
 
@@ -263,7 +266,7 @@ function formatName(email) {
 <style lang="scss" scoped>
 
 :deep(.el-popper.is-pure) {
-  border-radius: 6px;
+  border-radius: 12px;
 }
 
 .user-details {
@@ -289,24 +292,38 @@ function formatName(email) {
     margin-top: 10px;
   }
 
+  /* 发送额度 / 邮箱数量：原来两列直接贴着卡片左边、没有内边距；
+     改成卡片里一块浅底信息区，左边标签、右边额度。左右两列是分开的两组元素，
+     每行都固定 24px（和 el-tag 默认高度一致），这样标签和对应的额度才能对齐在同一行 */
   .action-info {
-    width: 100%;
+    justify-self: stretch;
     display: grid;
-    grid-template-columns: auto auto;
-    margin-top: 10px;
+    grid-template-columns: 1fr auto;
+    column-gap: 12px;
+    margin: 14px 14px 0;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: var(--el-fill-color-light);
 
     > div:first-child {
       display: grid;
-      align-items: center;
-      gap: 10px;
+      gap: 8px;
+      color: var(--el-text-color-secondary);
+
+      > span {
+        height: 24px;
+        display: flex;
+        align-items: center;
+      }
     }
 
     > div:last-child {
       display: grid;
-      gap: 10px;
-      text-align: center;
+      gap: 8px;
+      justify-items: end;
 
       > div {
+        height: 24px;
         display: flex;
         align-items: center;
       }
@@ -326,46 +343,45 @@ function formatName(email) {
   }
 
   .logout {
-    margin-top: 20px;
+    margin-top: 14px;
     width: 100%;
-    padding-left: 10px;
-    padding-right: 10px;
-    padding-bottom: 10px;
+    padding-left: 14px;
+    padding-right: 14px;
+    padding-bottom: 14px;
 
     .el-button {
-      border-radius: 6px;
-      height: 28px;
+      border-radius: 8px;
+      height: 32px;
       width: 100%;
     }
   }
 
+  /* 下拉卡片里的大头像：和顶栏小头像一样用品牌渐变圆形 */
   .details-avatar {
     margin-top: 20px;
-    height: 40px;
-    width: 40px;
-    background: var(--el-bg-color);
-    color: var(--el-text-color-primary);
-    border: 1px solid var(--dark-border);
-    font-size: 18px;
+    height: 48px;
+    width: 48px;
+    background: var(--brand-gradient);
+    color: #ffffff;
+    font-size: 20px;
+    font-weight: 600;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 10px;
+    border-radius: 50%;
   }
 }
 
 
+/* 原来是三列 grid，写信按钮一隐藏右侧工具栏就会挤到标题旁边；改成 flex + 工具栏 margin-left: auto，
+   不管写信按钮在不在，工具栏都靠右 */
 .header {
-  text-align: right;
   font-size: 12px;
-  display: grid;
+  display: flex;
+  align-items: center;
   height: 100%;
   gap: 10px;
-  grid-template-columns: auto auto 1fr;
-}
-
-.header.not-send {
-  grid-template-columns: auto 1fr;
+  padding-right: 14px;
 }
 
 .writer-box {
@@ -376,12 +392,13 @@ function formatName(email) {
   margin-left: 5px;
 
   .writer {
-    width: 34px;
-    height: 34px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     color: #ffffff;
-    background: linear-gradient(135deg, #1890ff, #3a80dd);
-    transition: all 0.3s ease;
+    background: var(--brand-gradient);
+    box-shadow: 0 4px 12px -4px rgba(51, 112, 255, 0.6);
+    transition: filter 0.15s ease;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -390,6 +407,17 @@ function formatName(email) {
       margin-left: 15px;
       font-size: 14px;
       font-weight: bold;;
+    }
+  }
+
+  &:hover .writer {
+    filter: brightness(1.06);
+  }
+
+  /* 桌面端侧栏展开时，侧栏顶部已经有写邮件按钮，这里不再重复；侧栏收起或在手机上时照常显示 */
+  @media (min-width: 1025px) {
+    &.aside-open {
+      display: none;
     }
   }
 }
@@ -402,40 +430,41 @@ function formatName(email) {
 }
 
 .breadcrumb-item {
-  font-weight: bold;
-  font-size: 14px;
+  font-weight: 600;
+  font-size: 16px;
   color: var(--el-text-color-primary);
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
+/* 右侧工具栏：图标统一成 36px 的圆角按钮，常态用次要灰，悬停加底色并变深 */
 .toolbar {
+  margin-left: auto;
   display: flex;
-  justify-content: end;
-  gap: 15px;
-  @media (max-width: 767px) {
-    gap: 10px;
-  }
+  align-items: center;
+  gap: 4px;
+  color: var(--el-text-color-secondary);
 
   .icon-item {
     align-self: center;
-    width: 30px;
-    height: 30px;
-    border-radius: 4px;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
   }
 
   .icon-item:hover {
-    background: var(--base-fill);
+    background: var(--icon-btn-hover-background);
+    color: var(--el-text-color-primary);
   }
 
   .notice {
-    font-size: 22px;
-    margin-right: 4px;
+    font-size: 20px;
   }
 
   .dark-icon {
@@ -443,30 +472,40 @@ function formatName(email) {
   }
 
   .sun-icon {
-    font-size: 24px;
+    font-size: 22px;
   }
 
+  /* 头像：品牌渐变圆形 + 白色首字母，整块（含下拉箭头）悬停有底色 */
   .avatar {
     display: flex;
     align-items: center;
     cursor: pointer;
+    margin-left: 6px;
+    padding: 2px;
+    border-radius: 20px;
+    transition: background 0.15s ease;
+
+    &:hover {
+      background: var(--icon-btn-hover-background);
+    }
 
     .avatar-text {
-      background: var(--el-bg-color);
-      color: var(--el-text-color-primary);
-      height: 30px;
-      width: 30px;
+      background: var(--brand-gradient);
+      color: #ffffff;
+      font-size: 14px;
+      font-weight: 600;
+      height: 32px;
+      width: 32px;
       display: flex;
       justify-content: center;
       align-items: center;
-      border-radius: 8px;
-      border: 1px solid var(--dark-border);
+      border-radius: 50%;
     }
 
     .setting-icon {
       position: relative;
       top: 0;
-      margin-right: 10px;
+      margin-right: 2px;
       bottom: 10px;
     }
   }

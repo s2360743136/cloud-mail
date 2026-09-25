@@ -11,8 +11,9 @@
       <div class="header-left" :style="'padding-left:' + actionLeft">
 
         <slot name="first"></slot>
-        <Icon class="icon reload" icon="ion:reload" width="18" height="18" @click="refresh"/>
-        <Icon v-perm="'email:delete'" class="icon delete" icon="uiw:delete" width="16" height="16"
+        <!-- 刷新、删除换成和邮箱栏一致的 Fluent 单色线条图标 -->
+        <Icon class="icon reload" icon="fluent:arrow-clockwise-24-regular" width="18" height="18" @click="refresh"/>
+        <Icon v-perm="'email:delete'" class="icon delete" icon="fluent:delete-24-regular" width="18" height="18"
               v-if="getSelectedMailsIds().length > 0"
               @click="handleDelete"/>
         <Icon v-perm="'email:delete'" class="icon delete" icon="fluent:mail-read-20-regular" width="21" height="21"
@@ -83,7 +84,8 @@
                   <div class="email-text">
                     <span class="email-subject" :style="(item.unread === EmailUnreadEnum.UNREAD && showUnread)  ? 'font-weight: bold' : ''">
                       <div class="unread" v-if="!isMobile && (item.unread === EmailUnreadEnum.UNREAD && showUnread) "/>
-                      <span v-if="item.code" class="code-tag" @click.stop="copyCode(item.code)">[{{ t('codeLabel') }}{{ item.code }}]</span>
+                      <!-- 验证码做成主色小标签，去掉原来的方括号；点击仍是复制 -->
+                      <span v-if="item.code" class="code-tag" @click.stop="copyCode(item.code)">{{ t('codeLabel') }}{{ item.code }}</span>
                       <span class="subject-text">
                         <slot name="subject" :email="item" >
                           {{ item.subject || '\u200B' }}
@@ -156,10 +158,11 @@
     >
       <template #dropdown>
         <el-dropdown-menu>
+          <!-- 右键菜单的图标原来混用了 5 个图标库（有彩色有线条、粗细不一），统一成 Fluent 单色 18px -->
           <el-dropdown-item v-if="rightClickEmail.code" @click="copyCode(rightClickEmail.code)" >
             <template #default>
               <div class="right-dropdown-item">
-                <Icon icon="fluent-color:clipboard-24" width="20" height="20" />
+                <Icon icon="fluent:copy-24-regular" width="18" height="18" />
                 <span>{{t('copyCode')}}</span>
               </div>
             </template>
@@ -167,7 +170,7 @@
           <el-dropdown-item v-if="['email'].includes(props.type)" @click="emailRead(rightClickEmail.emailId)" >
             <template #default>
               <div class="right-dropdown-item">
-                <Icon icon="fluent:mail-read-20-regular" width="20" height="20" />
+                <Icon icon="fluent:mail-read-20-regular" width="18" height="18" />
                 <span>{{t('markAsRead')}}</span>
               </div>
             </template>
@@ -175,7 +178,7 @@
           <el-dropdown-item v-if="['email','star'].includes(props.type)" @click="openReply(rightClickEmail)">
             <template #default>
               <div class="right-dropdown-item">
-                <Icon icon="la:reply" width="20" height="20"  />
+                <Icon icon="fluent:arrow-reply-24-regular" width="18" height="18"  />
                 <span>{{t('reply')}}</span>
               </div>
             </template>
@@ -183,7 +186,7 @@
           <el-dropdown-item v-if="['email','send', 'star'].includes(props.type)" @click="openForward(rightClickEmail)">
             <template #default>
               <div class="right-dropdown-item">
-                <Icon icon="iconoir:arrow-up-right" width="19" height="19"  />
+                <Icon icon="fluent:arrow-forward-24-regular" width="18" height="18"  />
                 <span>{{t('forward')}}</span>
               </div>
             </template>
@@ -191,7 +194,7 @@
           <el-dropdown-item v-if="['email','send', 'star'].includes(props.type)" @click="starChange(rightClickEmail)">
             <template #default>
               <div class="right-dropdown-item">
-                <Icon icon="solar:star-line-duotone" width="19" height="19"/>
+                <Icon icon="fluent:star-24-regular" width="18" height="18"/>
                 <span>{{t('star')}}</span>
               </div>
             </template>
@@ -223,7 +226,7 @@
           <el-dropdown-item @click="rightDelete(rightClickEmail.emailId)">
             <template #default>
               <div class="right-dropdown-item">
-                <Icon icon="uiw:delete" width="16" height="20" style="margin-left: 1px;margin-right: 3px" />
+                <Icon icon="fluent:delete-24-regular" width="18" height="18" />
                 <span>{{t('delete')}}</span>
               </div>
             </template>
@@ -1166,17 +1169,28 @@ function loadData() {
         }
       }
 
+      /* 验证码标签：主色浅底胶囊，数字等宽，在一排灰色摘要里一眼就能找到 */
       .code-tag {
         flex: 0 0 auto;
         max-width: 170px;
         height: 20px;
         line-height: 20px;
-        font-size: 14px;
-        color: var(--el-text-color-primary);
+        padding: 0 8px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        color: var(--el-color-primary);
+        background: var(--el-color-primary-light-9);
         overflow: hidden;
         white-space: nowrap;
         text-overflow: ellipsis;
         cursor: pointer;
+        transition: background 0.15s ease;
+
+        &:hover {
+          background: var(--el-color-primary-light-8);
+        }
       }
 
       .subject-text {
@@ -1242,6 +1256,13 @@ function loadData() {
 .pc-star {
   display: flex;
   width: 40px;
+  /* 未加星的空心星用浅灰，悬停变星标黄，已加星的是彩色图标不受影响 */
+  color: var(--el-text-color-placeholder);
+  transition: color 0.15s ease;
+
+  &:hover {
+    color: #F5A623;
+  }
 }
 
 @media (max-width: 1366px) {
@@ -1280,22 +1301,39 @@ function loadData() {
     flex-wrap: wrap;
     align-items: center;
     position: relative;
-    column-gap: 20px;
+    column-gap: 8px;
     row-gap: 8px;
     padding-left: 2px;
-    color: var(--el-text-color-primary);;
+    color: var(--el-text-color-secondary);
+
+    /* 工具栏图标（含父页面通过插槽塞进来的排序图标）统一做成带悬停底色的小按钮；
+       全局是 border-box，要改回 content-box，padding 才不会把图标本身挤小 */
+    :deep(.icon) {
+      box-sizing: content-box;
+      padding: 4px;
+      /* 排序图标本身有 28px，加上 padding 会把工具栏撑到 42px；上下 -2px 抵掉，
+         工具栏保持 38px，和左边邮箱栏、详情页的工具栏分割线对齐 */
+      margin: -2px 0;
+      border-radius: 8px;
+      transition: background 0.15s ease, color 0.15s ease;
+
+      &:hover {
+        background: var(--icon-btn-hover-background);
+        color: var(--el-text-color-primary);
+      }
+    }
   }
 
   .header-right {
     display: grid;
     grid-template-columns: auto auto;
-    align-items: start;
+    align-items: center;
     height: 100%;
-    color: var(--el-text-color-primary);;
+    color: var(--el-text-color-secondary);
 
     .email-count {
       white-space: nowrap;
-      margin-top: 6px;
+      font-size: 13px;
     }
   }
 
@@ -1305,8 +1343,15 @@ function loadData() {
   }
 
   .more-icon {
-    margin-top: 8px;
-    margin-left: 15px;
+    margin-left: 10px;
+    box-sizing: content-box;
+    padding: 6px;
+    border-radius: 8px;
+    transition: background 0.15s ease;
+
+    &:hover {
+      background: var(--icon-btn-hover-background);
+    }
   }
 }
 
