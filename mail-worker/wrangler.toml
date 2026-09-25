@@ -6,18 +6,22 @@ keep_vars = true
 [observability]
 enabled = true
 
-#[[d1_databases]]
-#binding = "db"			#d1数据库绑定名默认不可修改
-#database_name = ""		#d1数据库名字
-#database_id = ""		#d1数据库id
+# 下面三个绑定原来只在 Cloudflare 后台配置，这里按线上实际资源补上（2026-09-25）。
+# wrangler deploy 以本文件为准：后台单独加的绑定在下次部署时会被覆盖，
+# 连 GitHub 自动构建时是非交互运行，不会提示，部署完 db/kv/r2 就没了。
+# 这些是资源 ID，不是密钥，放在公开仓库里没有风险（没有账号权限拿到也用不了）。
+[[d1_databases]]
+binding = "db"			#d1数据库绑定名默认不可修改
+database_name = "mail-cloud"		#d1数据库名字
+database_id = "c3ec92f8-1999-4dae-a23f-4e2276d616a7"		#d1数据库id
 
-#[[kv_namespaces]]
-#binding = "kv"			#kv绑定名默认不可修改
-#id = ""					#kv数据库id
+[[kv_namespaces]]
+binding = "kv"			#kv绑定名默认不可修改
+id = "ed374236f4cb446594173abcc1289cb4"					#kv数据库id
 
-#[[r2_buckets]]
-#binding = "r2"			#r2对象存储绑定名默认不可修改
-#bucket_name = ""		#r2对象存储桶的名字
+[[r2_buckets]]
+binding = "r2"			#r2对象存储绑定名默认不可修改
+bucket_name = "cloud-mail"		#r2对象存储桶的名字
 
 #[[send_email]]
 #name = "email"			#CF发件, 配置后优先使用
