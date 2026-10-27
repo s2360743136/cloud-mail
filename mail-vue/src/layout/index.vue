@@ -108,10 +108,12 @@ onBeforeUnmount(() => {
   background: var(--app-bg);
   border-bottom: none;
   padding: 0 0 0 0;
-  /* 手机上内容面板是贴边的，顶栏换回白底加细线，避免灰白两块拼在一起显得脏 */
+  /* 手机上内容面板是贴边的，顶栏换回白底加细线，避免灰白两块拼在一起显得脏；
+     高度 50px 是 v3.4 上游改的（手机顶栏压矮一点），一并保留 */
   @media (max-width: 767px) {
     background: var(--el-bg-color);
     border-bottom: solid 1px var(--el-border-color-lighter);
+    height: 50px;
   }
 }
 

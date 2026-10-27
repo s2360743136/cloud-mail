@@ -19,16 +19,25 @@
         </div>
         <div class="content">
           <div class="email-info">
-            <!-- 发件人信息前加一个首字母头像（颜色按发件邮箱固定），和邮箱栏的头像风格一致 -->
+            <!-- 发件人信息前加一个首字母头像（颜色按发件邮箱固定），和邮箱栏的头像风格一致。
+                 发件人这一行用的是 v3.4 上游的新结构：sendNameRef + is-wrapped 用来在放不下时把邮箱地址换到第二行，
+                 sent-via 是「代发」标签（邮件头里实际发件地址 senderEmail 和显示的 From 不一致时出现） -->
             <div class="sender-card">
               <div class="sender-avatar" :style="{background: avatarColor(email.sendEmail)}">
                 {{ avatarLetter(email.name || email.sendEmail) }}
               </div>
               <div class="sender-meta">
                 <div class="send"><span class="send-source">{{$t('from')}}</span>
-                  <div class="send-name">
+                  <div class="send-name" ref="sendNameRef" :class="{ 'is-wrapped': senderWrapped }">
                     <span class="send-name-title">{{ email.name }}</span>
-                    <span><{{ email.sendEmail }}></span>
+                    <span class="send-email"><{{ email.sendEmail }}></span>
+                    <span class="sent-via" v-if="sentViaEmail">
+                      <el-tooltip effect="dark" :content="$t('sentVia', { email: sentViaEmail })">
+                        <span>
+                          <el-tag size="small" disable-transitions>{{ $t('sentViaTag') }}</el-tag>
+                        </span>
+                      </el-tooltip>
+                    </span>
                   </div>
                 </div>
                 <div class="receive"><span class="source">{{$t('recipient')}}</span><span class="receive-email">{{  formateReceive(email.recipient) }}</span></div>
@@ -82,7 +91,7 @@
 </template>
 <script setup>
 import ShadowHtml from '@/components/shadow-html/index.vue'
-import {computed, reactive, ref, watch, onMounted, onUnmounted} from "vue";
+import {computed, reactive, ref, watch, onMounted, onUnmounted, nextTick} from "vue";
 import {useRouter} from 'vue-router'
 import {ElMessage, ElMessageBox} from 'element-plus'
 import {emailDelete, emailRead} from "@/request/email.js";
@@ -100,12 +109,21 @@ import {useUiStore} from "@/store/ui.js";
 import {useI18n} from "vue-i18n";
 import {EmailUnreadEnum} from "@/enums/email-enum.js";
 import {avatarColor, avatarLetter} from "@/utils/avatar.js";
+const { t } = useI18n()
 
 const uiStore = useUiStore();
 const settingStore = useSettingStore();
 const accountStore = useAccountStore();
 const emailStore = useEmailStore();
 const router = useRouter()
+const sendNameRef = ref(null)
+const senderWrapped = ref(false)
+let senderResizeObserver = null
+
+const showPreview = ref(false)
+const srcList = reactive([])
+
+
 const email = computed(() => emailStore.contentData.email || {
   emailId: 0,
   attList: [],
@@ -113,15 +131,46 @@ const email = computed(() => emailStore.contentData.email || {
   text: '',
   recipient: '[]',
 })
-const showPreview = ref(false)
-const srcList = reactive([])
 
-const { t } = useI18n()
+const sentViaEmail = computed(() => {
+  const raw = String(email.value.senderEmail || '').trim()
+  if (!raw) return ''
+  const matched = raw.match(/<([^>]+)>/)
+  const address = (matched ? matched[1] : raw).trim()
+  if (!address || address.toLowerCase() === String(email.value.sendEmail || '').trim().toLowerCase()) return ''
+  return address
+})
+
 watch(() => accountStore.currentAccountId, () => {
   handleBack()
 })
 
 let readRequesting = false
+
+function contentWidth(el) {
+  const range = document.createRange()
+  range.selectNodeContents(el)
+  const width = range.getBoundingClientRect().width
+  range.detach()
+  return width
+}
+
+function updateSenderWrap() {
+  const root = sendNameRef.value
+  if (!root) return
+  const name = root.querySelector('.send-name-title')
+  const mail = root.querySelector('.send-email')
+  const tag = root.querySelector('.sent-via')
+  if (!name || !mail) {
+    senderWrapped.value = false
+    return
+  }
+  const gap = 6
+  let need = contentWidth(name) + gap + contentWidth(mail)
+  if (tag) need += gap + contentWidth(tag)
+  senderWrapped.value = need > root.clientWidth + 0.5
+}
+
 
 function tryMarkRead() {
   if (!emailStore.contentData.showUnread || readRequesting) return
@@ -156,15 +205,24 @@ watch(
   { flush: 'post' }
 )
 
+watch(
+  () => [email.value?.name, email.value?.sendEmail, sentViaEmail.value],
+  () => nextTick(updateSenderWrap)
+)
+
 onMounted(() => {
   tryMarkRead()
   window.addEventListener('keydown', handleKeyDown);
+  senderResizeObserver = new ResizeObserver(() => updateSenderWrap())
+  if (sendNameRef.value) senderResizeObserver.observe(sendNameRef.value)
+  nextTick(updateSenderWrap)
 })
 
 onUnmounted(() => {
   emailStore.contentData.showUnread = false;
   readRequesting = false
   window.removeEventListener('keydown', handleKeyDown);
+  senderResizeObserver?.disconnect()
 })
 
 function handleKeyDown(event) {
@@ -482,13 +540,36 @@ const handleDelete = () => {
           color: var(--secondary-text-color);
           display: flex;
           flex-wrap: wrap;
-        }
+          align-items: center;
+          column-gap: 6px;
 
-        /* 发件人名字加粗用正文色，后面的邮箱地址用次要灰，主次分明 */
-        .send-name-title {
-          padding-right: 5px;
-          font-weight: 600;
-          color: var(--el-text-color-primary);
+          /* 发件人名字加粗用正文色，后面的邮箱地址用次要灰，主次分明 */
+          .send-name-title {
+            font-weight: 600;
+            color: var(--el-text-color-primary);
+          }
+
+          /* 下面三段是 v3.4 上游的：地址太长时允许任意位置断行；放不下时（is-wrapped）
+             名字、代发标签留在第一行，邮箱地址单独换到第二行 */
+          .send-email {
+            max-width: 100%;
+            overflow-wrap: anywhere;
+          }
+
+          &.is-wrapped {
+            .send-name-title {
+              order: 1;
+            }
+
+            .sent-via {
+              order: 2;
+            }
+
+            .send-email {
+              order: 3;
+              flex-basis: 100%;
+            }
+          }
         }
       }
 

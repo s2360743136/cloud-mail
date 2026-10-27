@@ -128,6 +128,8 @@ button, input, select, textarea {
     --choose-account-background: var(--el-color-primary-light-9);
     --el-text-color-regular: var(--el-text-color-primary);
     --email-scroll-content-color: #8A9099;
+    /* 搜索关键词高亮底色，v3.4 上游新增，沿用上游取值 */
+    --search-hit-background: #ffe58f;
     --email-hover-background: #F4F6FA;
     --email-right-click-background: #FDF6EC;
     /* 登录卡片的描边：浅色下是一圈半透明白边，毛玻璃卡片压在深色背景图上时轮廓更清楚 */
@@ -177,6 +179,8 @@ button, input, select, textarea {
     --aside-right-border: none;
     --choose-account-background: rgba(75, 131, 255, 0.14);
     --email-scroll-content-color: #7D8189;
+    /* 深色下的搜索高亮底色，同样沿用上游 */
+    --search-hit-background: #8a6a12;
     --email-hover-background: #1B1C1F;
     --email-right-click-background: var(--email-hover-background);
     --login-border: rgba(255, 255, 255, 0.08);

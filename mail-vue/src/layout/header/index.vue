@@ -1,27 +1,41 @@
 <template>
-  <div class="header" :class="!hasPerm('email:send') ? 'not-send' : ''">
+  <div class="header">
     <div class="header-btn">
       <hanburger @click="changeAside"></hanburger>
       <span class="breadcrumb-item">{{ $t(route.meta.title) }}</span>
     </div>
-    <!-- aside-open：桌面端侧栏展开时侧栏里已经有写邮件按钮，这个圆形按钮就藏起来（样式里按屏幕宽度判断） -->
+    <!-- aside-open：桌面端侧栏展开时侧栏里已经有写邮件按钮，这个圆形按钮就藏起来（样式里按屏幕宽度判断）。
+         v3.4 上游把这里换成了透明的 el-button、桌面端一律隐藏；我们保留自己的渐变圆形按钮和显示规则 -->
     <div v-perm="'email:send'" class="writer-box" :class="{'aside-open': uiStore.asideShow}" @click="openSend">
-      <div class="writer">
+      <div class="writer" :aria-label="$t('compose')">
         <Icon icon="material-symbols:edit-outline-sharp" width="22" height="22"/>
       </div>
     </div>
+    <email-search
+      v-if="showInboxSearch"
+      :store="emailStore"
+      :search-options="inboxSearchOptions"
+      :class="{ 'account-show': accountPanelShow }"
+      @search="returnToList('email')"
+      @reset="returnToList('email')"
+    />
+    <email-search
+      v-else-if="showSentSearch"
+      :store="sendStore"
+      :search-options="sentSearchOptions"
+      :class="{ 'account-show': accountPanelShow }"
+      @search="returnToList('send')"
+      @reset="returnToList('send')"
+    />
     <div class="toolbar">
-      <div v-if="uiStore.dark" class="sun-icon icon-item" @click="openDark($event)">
-        <Icon icon="mingcute:sun-fill"/>
-      </div>
-      <div v-else class="dark-icon icon-item" @click="openDark($event)">
-        <Icon icon="solar:moon-linear"/>
-      </div>
-      <div class="notice icon-item" @click="openNotice">
-        <Icon icon="streamline-plump:announcement-megaphone"/>
-      </div>
-      <el-dropdown ref="userinfoRef" @visible-change="e => userInfoShow = e" :teleported="false" popper-class="detail-dropdown">
-        <div class="avatar" @click="userInfoHide" >
+      <el-dropdown
+        ref="userDropdownRef"
+        trigger="click"
+        :teleported="false"
+        popper-class="detail-dropdown"
+        @visible-change="userCardVisible = $event"
+      >
+        <div class="avatar">
           <div class="avatar-text">
             <div>{{ formatName(userStore.user.email) }}</div>
           </div>
@@ -81,20 +95,54 @@ import {Icon} from "@iconify/vue";
 import {useUiStore} from "@/store/ui.js";
 import {useUserStore} from "@/store/user.js";
 import {useRoute} from "vue-router";
-import {computed, ref} from "vue";
+import {computed, onBeforeUnmount, onMounted, ref} from "vue";
 import {useSettingStore} from "@/store/setting.js";
 import {hasPerm} from "@/perm/perm.js"
 import {useI18n} from "vue-i18n";
 import {setExtend} from "@/utils/day.js"
+import emailSearch from '@/components/email-search/index.vue'
+import {useEmailStore} from '@/store/email.js'
+import {useSendStore} from '@/store/send.js'
 
 const {t} = useI18n();
 const route = useRoute();
 const settingStore = useSettingStore();
 const userStore = useUserStore();
 const uiStore = useUiStore();
+const emailStore = useEmailStore()
+const sendStore = useSendStore()
 const logoutLoading = ref(false)
-const userInfoShow = ref(false)
-const userinfoRef = ref({})
+const userDropdownRef = ref(null)
+const userCardVisible = ref(false)
+const outsidePointerEvents = ['mousedown', 'pointerup', 'mouseup', 'click', 'pointercancel']
+let blockOutsideClick = false
+const inboxSearchOptions = computed(() => [
+  {label: t('titleDesc'), type: 'subject'},
+  {label: t('searchSummaryContent'), type: 'content'},
+  {label: t('sender'), type: 'sender'},
+  {label: t('searchSenderAddress'), type: 'senderAddress'},
+])
+const sentSearchOptions = computed(() => [
+  {label: t('titleDesc'), type: 'subject'},
+  {label: t('searchSummaryContent'), type: 'content'},
+  {label: t('searchRecipientAddress'), type: 'recipientAddress'},
+])
+const accountPanelShow = computed(() => uiStore.accountShow && hasPerm('account:query'))
+const showInboxSearch = computed(() =>
+  route.meta.name === 'email' || isMailboxDetail('inbox')
+)
+const showSentSearch = computed(() =>
+  route.meta.name === 'send' || isMailboxDetail('sent')
+)
+
+function isMailboxDetail(mailbox) {
+  return route.meta.name === 'content' && route.params.mailbox === mailbox
+}
+
+function returnToList(listName) {
+  if (route.meta.name !== 'content') return
+  router.push({name: listName})
+}
 
 const accountCount = computed(() => {
   return userStore.user.role.accountCount
@@ -157,14 +205,6 @@ const sendCount = computed(() => {
   return userStore.user.sendCount + '/' + userStore.user.role.sendCount
 })
 
-function userInfoHide(e) {
-    if (userInfoShow.value) {
-        userinfoRef.value.handleClose()
-    } else {
-        userinfoRef.value.handleOpen()
-    }
-}
-
 async function copyEmail(email) {
   try {
     await navigator.clipboard.writeText(email);
@@ -188,53 +228,8 @@ function changeLang(lang) {
   settingStore.lang = lang
 }
 
-function openNotice() {
-  uiStore.showNotice()
-}
-
-function openDark(e) {
-
-  const nextIsDark = !uiStore.dark
-  const root = document.documentElement
-
-  if (!document.startViewTransition) {
-    switchDark(nextIsDark, root);
-    return
-  }
-
-  const x = e.clientX
-  const y = e.clientY
-
-  const maxX = Math.max(x, window.innerWidth - x)
-  const maxY = Math.max(y, window.innerHeight - y)
-  const endRadius = Math.hypot(maxX, maxY)
-
-  // 标记切换目标，供 CSS 选择器使用
-  root.setAttribute('data-theme-to', nextIsDark ? 'dark' : 'light')
-  root.style.setProperty('--vt-x', `${x}px`)
-  root.style.setProperty('--vt-y', `${y}px`)
-  root.style.setProperty('--vt-end-radius', `${endRadius + 10}px`)
-
-  const transition = document.startViewTransition(() => {
-    switchDark(nextIsDark, root);
-  })
-
-  transition.finished.finally(() => {
-    // 清理标记
-    root.removeAttribute('data-theme-to')
-  })
-}
-
-function switchDark(nextIsDark, root) {
-  root.setAttribute('class', nextIsDark ? 'dark' : '')
-  const metaTag = document.getElementById('theme-color-meta');
-  const isMobile =  !window.matchMedia("(pointer: fine) and (hover: hover)").matches;
-  // 浏览器地址栏/状态栏颜色跟着顶栏走：手机上顶栏是白底（暗色 #141414），桌面端是应用底色 --app-bg。
-  // index.html 里首屏也有同样一套取值，两处要一起改
-  metaTag.setAttribute('content', nextIsDark ? (isMobile ? '#141414' : '#0C0C0E') : (isMobile ? '#FFFFFF' : '#F4F6FA'));
-  uiStore.dark = nextIsDark
-}
-
+// v3.4 上游把顶栏的深色模式、公告两个按钮挪走了：深色切换进了「个人设置」页的 theme-selector 组件，
+// 公告在个人设置页有「查看公告」按钮。这里跟着上游删掉，我们原来改过的地址栏取色挪到了 theme-selector 里
 function openSend() {
   uiStore.writerRef.open()
 }
@@ -256,6 +251,47 @@ function clickLogout() {
 function formatName(email) {
   return email[0]?.toUpperCase() || ''
 }
+
+function isInsideUserCard(target) {
+  const element = target instanceof Element ? target : target?.parentElement
+  if (!(element instanceof Element)) return false
+  if (userDropdownRef.value?.$el?.contains(element)) return true
+  return !!element.closest('.detail-dropdown')
+}
+
+function handleUserCardPointerDown(event) {
+  blockOutsideClick = userCardVisible.value && !isInsideUserCard(event.target)
+  if (!blockOutsideClick) return
+
+  event.preventDefault()
+  event.stopPropagation()
+  userDropdownRef.value?.handleClose()
+}
+
+function handleUserCardPointerEvent(event) {
+  if (!blockOutsideClick) return
+  event.preventDefault()
+  event.stopPropagation()
+  if (event.type === 'pointerup' || event.type === 'pointercancel') {
+    setTimeout(() => {
+      blockOutsideClick = false
+    })
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('pointerdown', handleUserCardPointerDown, true)
+  outsidePointerEvents.forEach(type => {
+    document.addEventListener(type, handleUserCardPointerEvent, true)
+  })
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('pointerdown', handleUserCardPointerDown, true)
+  outsidePointerEvents.forEach(type => {
+    document.removeEventListener(type, handleUserCardPointerEvent, true)
+  })
+})
 
 </script>
 <style>
@@ -382,6 +418,19 @@ function formatName(email) {
   height: 100%;
   gap: 10px;
   padding-right: 14px;
+  /* v3.4 上游新增：桌面端的搜索框（email-search）是相对顶栏绝对定位的 */
+  position: relative;
+}
+
+/* 手机上标题区占满剩余宽度，搜索按钮、工具栏挤在右边（v3.4 上游规则，原样保留） */
+@media (max-width: 767px) {
+  .header-btn {
+    flex: 1;
+  }
+
+  .toolbar {
+    flex-shrink: 0;
+  }
 }
 
 .writer-box {
@@ -390,6 +439,7 @@ function formatName(email) {
   align-items: center;
   justify-content: center;
   margin-left: 5px;
+  flex-shrink: 0;
 
   .writer {
     width: 36px;
@@ -402,12 +452,6 @@ function formatName(email) {
     display: flex;
     align-items: center;
     justify-content: center;
-
-    .writer-text {
-      margin-left: 15px;
-      font-size: 14px;
-      font-weight: bold;;
-    }
   }
 
   &:hover .writer {
@@ -463,18 +507,6 @@ function formatName(email) {
     color: var(--el-text-color-primary);
   }
 
-  .notice {
-    font-size: 20px;
-  }
-
-  .dark-icon {
-    font-size: 20px;
-  }
-
-  .sun-icon {
-    font-size: 22px;
-  }
-
   /* 头像：品牌渐变圆形 + 白色首字母，整块（含下拉箭头）悬停有底色 */
   .avatar {
     display: flex;
@@ -490,6 +522,7 @@ function formatName(email) {
     }
 
     .avatar-text {
+      box-sizing: border-box;
       background: var(--brand-gradient);
       color: #ffffff;
       font-size: 14px;
